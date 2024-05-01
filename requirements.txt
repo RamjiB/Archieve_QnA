@@ -1,0 +1,13 @@
+langchain
+chromadb
+openai
+pdfplumber
+tiktoken
+torch
+transformers
+accelerate
+sentence-transformers
+einops
+itsdangerous
+bitsandbytes
+streamlit
