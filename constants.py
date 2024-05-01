@@ -6,8 +6,6 @@ EMB_SBERT_MINILM = "sentence-transformers/all-MiniLM-L6-v2" # Chroma takes care 
 
 
 LLM_OPENAI_GPT35 = "gpt-3.5-turbo"
-LLM_FLAN_T5_XXL = "google/flan-t5-xxl"
-LLM_FLAN_T5_XL = "google/flan-t5-xl"
 LLM_FASTCHAT_T5_XL = "lmsys/fastchat-t5-3b-v1.0"
 LLM_FLAN_T5_SMALL = "google/flan-t5-small"
 LLM_FLAN_T5_BASE = "google/flan-t5-base"
