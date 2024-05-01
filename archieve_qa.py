@@ -2,13 +2,12 @@ from langchain.document_loaders import PDFPlumberLoader
 from langchain.text_splitter import CharacterTextSplitter, TokenTextSplitter
 from transformers import pipeline
 from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain import HuggingFacePipeline
 from langchain.embeddings import HuggingFaceInstructEmbeddings, HuggingFaceEmbeddings
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.llms import OpenAI
 from constants import *
 from transformers import AutoTokenizer
 import torch
@@ -37,7 +36,6 @@ class PdfQA:
     def create_sbert_mpnet(cls):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         return HuggingFaceEmbeddings(model_name=EMB_SBERT_MPNET_BASE, model_kwargs={"device": device})    
-    
     
     @classmethod
     def create_flan_t5_small(cls, load_in_8bit=False):
@@ -85,6 +83,7 @@ class PdfQA:
             model_kwargs={"device_map": "auto", "load_in_8bit": load_in_8bit, "max_length": 512, "temperature": 0.}
         )
     
+    
     @classmethod
     def create_falcon_instruct_small(cls, load_in_8bit=False):
         model = "tiiuae/falcon-7b-instruct"
@@ -127,7 +126,6 @@ class PdfQA:
         load_in_8bit = self.config.get("load_in_8bit",False)
         # OpenAI GPT 3.5 API
         if self.config["llm"] == LLM_OPENAI_GPT35:
-            self.llm = ChatOpenAI(model_name=GPT_MODEL_NAME, openai_api_key = OPENAI_API_KEY)
             pass
         elif self.config["llm"] == LLM_FLAN_T5_SMALL:
             if self.llm is None:
@@ -138,12 +136,6 @@ class PdfQA:
         elif self.config["llm"] == LLM_FLAN_T5_LARGE:
             if self.llm is None:
                 self.llm = PdfQA.create_flan_t5_large(load_in_8bit=load_in_8bit)
-        elif self.config["llm"] == LLM_FLAN_T5_XL:
-            if self.llm is None:
-                self.llm = PdfQA.create_flan_t5_xl(load_in_8bit=load_in_8bit)
-        elif self.config["llm"] == LLM_FLAN_T5_XXL:
-            if self.llm is None:
-                self.llm = PdfQA.create_flan_t5_xxl(load_in_8bit=load_in_8bit)
         elif self.config["llm"] == LLM_FASTCHAT_T5_XL:
             if self.llm is None:
                 self.llm = PdfQA.create_fastchat_t5_xl(load_in_8bit=load_in_8bit)
@@ -194,10 +186,12 @@ class PdfQA:
         
         if self.config["llm"] == LLM_OPENAI_GPT35:
           # Use ChatGPT API
-          self.qa = RetrievalQA.from_chain_type(llm=OpenAI(model_name=LLM_OPENAI_GPT35, temperature=0.), chain_type="stuff",\
-                                      retriever=self.vectordb.as_retriever(search_kwargs={"k":3}))
+            self.qa = RetrievalQA.from_chain_type(llm=ChatOpenAI(model_name=LLM_OPENAI_GPT35), chain_type="map_rerank",\
+                                        retriever=self.vectordb.as_retriever(search_kwargs={"k":3}))
+            
+
         else:
-            hf_llm = HuggingFacePipeline(pipeline=self.llm,model_id=self.config["llm"])
+            hf_llm = HuggingFacePipeline(pipeline=self.llm, model_id=self.config["llm"])
 
             self.qa = RetrievalQA.from_chain_type(llm=hf_llm, chain_type="stuff",retriever=self.retriever)
             if self.config["llm"] == LLM_FLAN_T5_SMALL or self.config["llm"] == LLM_FLAN_T5_BASE or self.config["llm"] == LLM_FLAN_T5_LARGE:
@@ -216,7 +210,6 @@ class PdfQA:
         """
         Answer the question
         """
-
         answer_dict = self.qa({"query":question,})
         print(answer_dict)
         answer = answer_dict["result"]

@@ -47,6 +47,8 @@ def load_emb(emb):
         return PdfQA.create_instructor_xl()
     elif emb == EMB_SBERT_MPNET_BASE:
         return PdfQA.create_sbert_mpnet()
+    elif emb == EMB_OPENAI_ADA:
+        pass
     else:
         raise ValueError("Invalid embedding setting")
 
@@ -66,20 +68,26 @@ with st.sidebar:
     if st.button("Submit") and pdf_files_folder_path is not None:
         with st.spinner(text="Generating Embeddings.."):
             with TemporaryDirectory() as tmp_dir_path:
-                shutil.rmtree(tmp_dir_path, ignore_errors=True)
-                shutil.copytree(pdf_files_folder_path, tmp_dir_path)
-                st.session_state["pdf_qa_model"].config = {
-                    "dir_path": str(tmp_dir_path),
-                    "embedding": emb,
-                    "llm": llm,
-                    "load_in_8bit": load_in_8bit
-                }
-                st.session_state["pdf_qa_model"].embedding = load_emb(emb)
-                st.session_state["pdf_qa_model"].llm = load_llm(llm,load_in_8bit)        
-                st.session_state["pdf_qa_model"].init_embeddings()
-                st.session_state["pdf_qa_model"].init_models()
-                st.session_state["pdf_qa_model"].vector_db_pdf()
-                st.sidebar.success("Embeddings successfully Created and Store in VectorDB (Chroma)")
+                if (llm == LLM_OPENAI_GPT35 and OPENAI_API_KEY is None) or (emb == EMB_OPENAI_ADA and OPENAI_API_KEY is None):
+                    st.sidebar.success("Update your OpenAI Key and Restart")
+                else:
+                    shutil.rmtree(tmp_dir_path, ignore_errors=True)
+                    shutil.copytree(pdf_files_folder_path, tmp_dir_path)
+                    st.session_state["pdf_qa_model"].config = {
+                        "dir_path": str(tmp_dir_path),
+                        "embedding": emb,
+                        "llm": llm,
+                        "load_in_8bit": load_in_8bit
+                    }
+                    try:
+                        st.session_state["pdf_qa_model"].embedding = load_emb(emb)
+                        st.session_state["pdf_qa_model"].llm = load_llm(llm,load_in_8bit)        
+                        st.session_state["pdf_qa_model"].init_embeddings()
+                        st.session_state["pdf_qa_model"].init_models()
+                        st.session_state["pdf_qa_model"].vector_db_pdf()
+                        st.sidebar.success("Embeddings successfully Created and Store in VectorDB (Chroma)")
+                    except Exception as e:
+                        st.sidebar.success(f"Error: {e}")
 
 question = st.text_input('Ask a question')
 

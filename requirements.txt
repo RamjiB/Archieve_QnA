@@ -11,3 +11,4 @@ einops
 itsdangerous
 bitsandbytes
 streamlit
+langchain_openai
